@@ -29,7 +29,8 @@ app.use(express.urlencoded({ extended: true })); // Parses URL-encoded data
 // API Routes 
 app.use('/api/auth', require('./src/routes/authRoutes'));
 // Future routes to be added:
-// app.use('/api/products', require('./src/routes/productRoutes'));
+app.use('/api/products', require('./src/routes/productRoutes'));
+app.use('/api/categories', require('./src/routes/categoryRoutes'));
 // app.use('/api/cart', require('./src/routes/cartRoutes'));
 // app.use('/api/payment', require('./src/routes/paymentRoutes'));
 

@@ -31,6 +31,7 @@ camstyle-backend/
 │   ├── controllers/        # The "Brain" (Logic for each route)
 │   │   ├── authController.js
 │   │   ├── productController.js
+│   │   ├── categoryController.js   # Logic for CRUD (Create, Read, Update, Delete) categories
 │   │   ├── cartController.js
 │   │   └── paymentController.js
 │   ├── middleware/         # Security & Rules
@@ -39,10 +40,12 @@ camstyle-backend/
 │   ├── models/             # Database Blueprints (Schemas)
 │   │   ├── User.js         # Roles: 'user' and 'admin'
 │   │   ├── Product.js      # Includes Category
+│   │   ├── Category.js     # Schema (Name, Image, Description)
 │   │   └── Cart.js
 │   ├── routes/             # API Endpoints definition
 │   │   ├── authRoutes.js
 │   │   ├── productRoutes.js
+│   │   ├── categoryRoutes.js
 │   │   ├── cartRoutes.js
 │   │   └── paymentRoutes.js
 │   └── utils/              # Small helper tools
