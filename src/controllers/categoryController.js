@@ -69,5 +69,33 @@ const deleteCategory = async (req, res, next) => {
         next(error);
     }
 };
+// @desc    Update a category
+// @route   PUT /api/categories/:id
+// @access  Private/Admin
+const updateCategory = async (req, res, next) => {
+    try {
+        const { name, description } = req.body;
+        const category = await Category.findById(req.params.id);
 
-module.exports = { getCategories, createCategory, deleteCategory };
+        if (!category) {
+            res.status(404);
+            throw new Error('Category not found');
+        }
+
+        // Update text fields
+        category.name = name || category.name;
+
+        // If a new image was uploaded via Multer/Cloudinary
+        if (req.file) {
+            category.image = req.file.path; 
+        }
+
+        const updatedCategory = await category.save();
+        res.json(updatedCategory);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Add updateCategory to your exports
+module.exports = { getCategories, createCategory, deleteCategory, updateCategory };
