@@ -69,16 +69,54 @@ const createProduct = async (req, res, next) => {
 
 // @desc    Update a product (ADMIN ONLY)
 // @route   PUT /api/products/:id
+// @desc    Update product details (Text only)
+// @route   PUT /api/products/:id
 const updateProduct = async (req, res, next) => {
     try {
         const product = await Product.findById(req.params.id);
+
         if (product) {
+            // Update only the text fields
             product.name = req.body.name || product.name;
-            product.price = req.body.price || product.price;
-            // ... update other fields similarly
+            product.description = req.body.description || product.description;
+            
+            // Handle quantity (allowing 0)
+            if (req.body.quantity !== undefined) {
+                product.quantity = req.body.quantity;
+            }
+
             const updatedProduct = await product.save();
             res.json(updatedProduct);
-        } else { res.status(404); throw new Error('Product not found'); }
+        } else {
+            res.status(404);
+            throw new Error('Product not found');
+        }
+    } catch (error) { next(error); }
+};
+
+// @desc    Update product images alone
+// @route   PUT /api/products/:id/images
+const updateProductImages = async (req, res, next) => {
+    try {
+        const product = await Product.findById(req.params.id);
+
+        if (product) {
+            // Check if files were uploaded
+            if (!req.files || req.files.length === 0) {
+                res.status(400);
+                throw new Error('Please upload at least one image');
+            }
+
+            // Map new Cloudinary URLs to the images array
+            const imageUrls = req.files.map(file => file.path);
+            product.images = imageUrls;
+
+            const updatedProduct = await product.save();
+            res.json(updatedProduct);
+        } else {
+            res.status(404);
+            throw new Error('Product not found');
+        }
     } catch (error) { next(error); }
 };
 
@@ -93,4 +131,4 @@ const deleteProduct = async (req, res, next) => {
     } catch (error) { next(error); }
 };
 
-module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct };
+module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct,updateProductImages };

@@ -48,6 +48,9 @@ const loginUser = async (req, res, next) => {
         if (user && (await user.matchPassword(password))) {
             // Return ONLY the token as requested
             res.json({
+                name: user.name,
+                email: user.email,
+                role: user.role,
                 token: generateToken(user._id)
             });
         } else {
