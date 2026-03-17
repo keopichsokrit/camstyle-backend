@@ -77,6 +77,7 @@ const getUserProfile = async (req, res, next) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                avatar: user.avatar
             });
         } else {
             res.status(404);

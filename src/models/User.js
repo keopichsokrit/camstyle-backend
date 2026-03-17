@@ -10,7 +10,9 @@ const userSchema = new mongoose.Schema({
         type: String, 
         enum: ['user', 'admin'], 
         default: 'user' 
-    }
+    },
+    avatar: { type: String, default: "" },
+    cloudinary_id: { type: String, default: "" }
     
 }, { timestamps: true });
 

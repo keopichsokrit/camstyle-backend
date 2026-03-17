@@ -33,6 +33,7 @@ camstyle-backend/
 │   │   ├── productController.js
 │   │   ├── categoryController.js   # Logic for CRUD (Create, Read, Update, Delete) categories
 │   │   ├── cartController.js
+│   │   ├── profileController.js
 │   │   └── paymentController.js
 │   ├── middleware/         # Security & Rules
 │   │   ├── authMiddleware.js  # JWT verification & Role checking
@@ -47,6 +48,7 @@ camstyle-backend/
 │   │   ├── productRoutes.js
 │   │   ├── categoryRoutes.js
 │   │   ├── cartRoutes.js
+│   │   ├── profileRoutes.js
 │   │   └── paymentRoutes.js
 │   └── utils/              # Small helper tools
 │       └── generateToken.js # Logic to create JWT
