@@ -5,7 +5,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const connectDB = require('./src/config/db');
 const { errorHandler } = require('./src/middleware/errorMiddleware');
-
+const paymentRoutes = require('./src/routes/paymentRoutes');
 
 // Initialize database connection
 connectDB();
@@ -35,7 +35,7 @@ app.use('/api/categories', require('./src/routes/categoryRoutes'));
 // Cart service
 app.use('/api/cart', require('./src/routes/cartRoutes'));
 // app.use('/api/cart', require('./src/routes/cartRoutes'));
-// app.use('/api/payment', require('./src/routes/paymentRoutes'));
+app.use('/api/payment', require('./src/routes/paymentRoutes'));
 
 // Global Error Handler
 app.use(errorHandler);

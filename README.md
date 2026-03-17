@@ -22,7 +22,7 @@ Frontend Integration: Designed specifically for a Flutter mobile application.
 To ensure the project remains organized and scalable as more services are added, the project follows this directory structure.
 
 MVC CamStyle project structure: 
-
+``` bash
 camstyle-backend/
 ├── src/
 │   ├── config/             # Connection logic
@@ -54,7 +54,7 @@ camstyle-backend/
 ├── .gitignore              # Tells Git to ignore node_modules and .env
 ├── package.json            # Dependencies and Scripts
 └── server.js               # THE ONLY ENTRY POINT (Starts everything)
-
+```
 3. Essential DependenciesTo make this project work, you will need the following "Free to Use" packages:PackagePurposeexpressThe core web framework.mongooseTo interact with MongoDB Atlas.dotenvTo manage secret API keys and environment variables.jsonwebtokenTo handle secure authentication (JWT).bcryptjsTo hash and secure user passwords.cloudinaryTo upload and manage product images.multerMiddleware for handling image uploads.corsTo allow your Flutter app to communicate with the server.nodemon(Dev tool) Restarts the server automatically during coding.
 
 4. Necessary command:

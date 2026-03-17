@@ -70,3 +70,39 @@ exports.addToCart = async (req, res) => {
         res.status(400).json({ message: "Error updating cart", error: error.message });
     }
 };
+// @desc    Clear cart and restore stock
+// @route   DELETE /api/cart
+// @access  Private
+exports.clearCart = async (req, res) => {
+    try {
+        // 1. Find the user's cart
+        const cart = await Cart.findOne({ user: req.user._id });
+
+        if (!cart) {
+            return res.status(404).json({ message: "Cart not found" });
+        }
+
+        // 2. Loop through items and return quantity to Product stock in Atlas
+        for (const item of cart.items) {
+            const product = await Product.findById(item.product);
+            if (product) {
+                product.quantity += item.quantity; // Restore the stock
+                await product.save();
+            }
+        }
+
+        // 3. Delete the cart document entirely
+        await Cart.findOneAndDelete({ user: req.user._id });
+
+        res.status(200).json({ 
+            status: "success", 
+            message: "Cart cleared and stock restored to inventory." 
+        });
+
+    } catch (error) {
+        res.status(500).json({ 
+            message: "Error clearing cart", 
+            error: error.message 
+        });
+    }
+};
