@@ -16,9 +16,23 @@ exports.chargeCart = async (req, res) => {
         }
 
         // 2. Calculate Total Price (Always calculate server-side for real money!)
+        // const totalAmount = cart.items.reduce((acc, item) => {
+        //     return acc + (item.product.price * item.quantity);
+        // }, 0);
         const totalAmount = cart.items.reduce((acc, item) => {
-            return acc + (item.product.price * item.quantity);
+            // Skip items if the product was deleted from the database
+            if (!item.product || typeof item.product.price === 'undefined') {
+                return acc; 
+            }
+            return acc + (Number(item.product.price) * item.quantity);
         }, 0);
+
+        // Format to 2 decimal places for USD precision
+        const finalAmount = parseFloat(totalAmount.toFixed(2));
+
+        if (finalAmount <= 0) {
+            return res.status(400).json({ message: "Invalid total amount. Check if products still exist." });
+        }
 
         // 3. Setup Bakong Individual Info
         const optionalData = {
@@ -31,12 +45,19 @@ exports.chargeCart = async (req, res) => {
             expirationTimestamp: Date.now() + (5 * 60 * 1000), // 5 minutes expiry
         };
 
+        // const individualInfo = new IndividualInfo(
+        //     process.env.BAKONG_INDIVIDUAL_ID,
+        //     khqrData.currency.usd,
+        //     process.env.BAKONG_ACCOUNT_NAME,
+        //     "Phnom Penh",
+        //     optionalData
+        // );
         const individualInfo = new IndividualInfo(
-            process.env.BAKONG_INDIVIDUAL_ID,
-            khqrData.currency.usd,
-            process.env.BAKONG_ACCOUNT_NAME,
-            "Phnom Penh",
-            optionalData
+            process.env.BAKONG_INDIVIDUAL_ID,   // "devit@abaa"
+            process.env.BAKONG_ACCOUNT_NAME,    // "Devit Huotkeo"
+            "Phnom Penh",                       // Merchant City
+            khqrData.currency.usd,              // Currency (USD)
+            optionalData                        // Object containing amount
         );
 
         const khqr = new BakongKHQR();
