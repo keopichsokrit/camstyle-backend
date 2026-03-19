@@ -1,6 +1,7 @@
 const { BakongKHQR, MerchantInfo, khqrData } = require('bakong-khqr');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+const { sendPaymentSuccessAlert } = require('../services/telegram.service');
 
 // Helper function to calculate total (DRY - Don't Repeat Yourself)
 const calculateTotal = async (cart) => {
@@ -58,19 +59,19 @@ exports.generateBakongQR = async (req, res) => {
         const response = khqr.generateMerchant(merchantInfo);
 
         if (!response || !response.data) {
-            return res.status(500).json({ 
-                message: "Failed to generate QR code", 
-                details: response ? response : "No response from QR generator" 
+            return res.status(500).json({
+                message: "Failed to generate QR code",
+                details: response ? response : "No response from QR generator"
             });
         }
 
         // Validation Check before sending to Flutter
         const validation = BakongKHQR.verify(response.data.qr);
-        
+
         if (!validation.isValid) {
-            return res.status(500).json({ 
+            return res.status(500).json({
                 message: "Generated QR is invalid internally",
-                details: validation.reason 
+                details: validation.reason
             });
         }
 
@@ -89,18 +90,20 @@ exports.generateBakongQR = async (req, res) => {
 // @desc    Verify Payment Status (Polling from Flutter)
 // @route   POST /api/payment/verify
 exports.verifyPayment = async (req, res) => {
-    if (!req.body || !req.body.md5) {
+    const requestMd5 = req.body?.md5 || req.body?.md;
+
+    if (!requestMd5) {
         return res.status(400).json({ message: "MD5 hash is required in request body" });
     }
 
-    const { md5 } = req.body;
+    const md5 = String(requestMd5).trim();
 
     try {
         const khqr = new BakongKHQR();
         const apiToken = process.env.BAKONG_TOKEN;
         const apiUrl = process.env.BAKONG_API_URL || "https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5";
 
-        // Call Bakong API to check transaction
+        /* Call Bakong API to check transaction */
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
@@ -113,21 +116,40 @@ exports.verifyPayment = async (req, res) => {
         const data = await response.json();
 
         if (response.ok && data.responseCode === 0) {
-            // Payment successful
-            // Clear the user's cart
-            const cart = await Cart.findOneAndUpdate(
+
+            /* Payment successful */
+            const cartBeforeClear = await Cart.findOne({ user: req.user._id });
+            const paidAmount = cartBeforeClear ? await calculateTotal(cartBeforeClear) : 0;
+            let telegramResult = null;
+
+            /* Clear the user's cart */
+            await Cart.findOneAndUpdate(
                 { user: req.user._id },
                 { items: [], totalAmount: 0 },
                 { new: true }
             );
 
+            try {
+                telegramResult = await sendPaymentSuccessAlert({
+                    userName: req.user?.name,
+                    userEmail: req.user?.email,
+                    amount: paidAmount,
+                    currency: 'USD',
+                    md5
+                });
+            } catch (telegramError) {
+                telegramResult = { success: false, error: telegramError.message };
+                console.error('Telegram payment alert failed:', telegramError.message);
+            }
+
             res.status(200).json({
-                message: "Payment verified successfully",
+                message: "Payment verified success ",
                 status: "success",
+                telegram: telegramResult,
                 details: data
             });
         } else {
-            // Payment not found or failed
+            /* Payment not found or failed */
             res.status(200).json({
                 message: "Payment not completed or invalid",
                 status: "pending",
