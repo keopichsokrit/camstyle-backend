@@ -89,22 +89,51 @@ exports.generateBakongQR = async (req, res) => {
 // @desc    Verify Payment Status (Polling from Flutter)
 // @route   POST /api/payment/verify
 exports.verifyPayment = async (req, res) => {
+    if (!req.body || !req.body.md5) {
+        return res.status(400).json({ message: "MD5 hash is required in request body" });
+    }
+
     const { md5 } = req.body;
 
     try {
         const khqr = new BakongKHQR();
-        // Use your Bakong API Token from the Bakong Developer Portal
-        // For production, this token is required to use the 'checkTransaction' method
-        const apiToken = process.env.BAKONG_TOKEN; 
-        
-        // This is a conceptual check. Usually, you poll the Bakong Open API 
-        // to see if the MD5 hash has been 'cleared' (paid).
-        // If success: clear user's cart in your DB.
-        
-        res.status(200).json({ 
-            message: "Status check initiated", 
-            hint: "In a real setup, call Bakong API with MD5 here." 
+        const apiToken = process.env.BAKONG_TOKEN;
+        const apiUrl = process.env.BAKONG_API_URL || "https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5";
+
+        // Call Bakong API to check transaction
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiToken}`
+            },
+            body: JSON.stringify({ md5: md5 })
         });
+
+        const data = await response.json();
+
+        if (response.ok && data.responseCode === 0) {
+            // Payment successful
+            // Clear the user's cart
+            const cart = await Cart.findOneAndUpdate(
+                { user: req.user._id },
+                { items: [], totalAmount: 0 },
+                { new: true }
+            );
+
+            res.status(200).json({
+                message: "Payment verified successfully",
+                status: "success",
+                details: data
+            });
+        } else {
+            // Payment not found or failed
+            res.status(200).json({
+                message: "Payment not completed or invalid",
+                status: "pending",
+                details: data
+            });
+        }
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
