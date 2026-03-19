@@ -1,9 +1,9 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { chargeCart, verifyPayment } = require('../controllers/paymentController');
-const { protect } = require('../middleware/authMiddleware');
+const paymentController = require("../controllers/paymentController");
+const { protect } = require("../middleware/authMiddleware");
 
-router.post('/charge', protect, chargeCart);
-router.post('/verify', protect, verifyPayment);
+router.post("/checkout", protect, paymentController.generateBakongQR);
+router.post("/verify", protect, paymentController.verifyPayment);
 
 module.exports = router;

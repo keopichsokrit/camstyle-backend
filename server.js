@@ -35,9 +35,11 @@ app.use('/api/categories', require('./src/routes/categoryRoutes'));
 // Cart service
 app.use('/api/cart', require('./src/routes/cartRoutes'));
 // app.use('/api/cart', require('./src/routes/cartRoutes'));
-app.use('/api/payment', require('./src/routes/paymentRoutes'));
+// app.use('/api/payment', require('./src/routes/paymentRoutes'));
 // server.js updates
 app.use('/api/profile', require('./src/routes/profileRoutes'));
+
+app.use('/api/payment', paymentRoutes); // New payment routes
 
 // Global Error Handler
 app.use(errorHandler);

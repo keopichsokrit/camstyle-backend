@@ -4,6 +4,15 @@ const Product = require('../models/Product');
 // @desc    Get user cart
 // @route   GET /api/cart
 // @access  Private (User/Admin)
+// Helper function to calculate total (DRY - Don't Repeat Yourself)
+const calculateTotal = async (cart) => {
+    await cart.populate('items.product', 'price');
+    const total = cart.items.reduce((acc, item) => {
+        const price = item.product ? item.product.price : 0;
+        return acc + (price * item.quantity);
+    }, 0);
+    return total;
+};
 exports.getCart = async (req, res) => {
     try {
         // Find cart for the logged-in user (from JWT)
@@ -63,7 +72,10 @@ exports.addToCart = async (req, res) => {
                 items: [{ product: productId, quantity }]
             });
         }
-
+        // Calculate and Save totalAmount to DB
+        cart.totalAmount = await calculateTotal(cart);
+        await cart.save();
+        
         res.status(201).json(cart);
 
     } catch (error) {

@@ -1,129 +1,111 @@
-const { BakongKHQR, khqrData, IndividualInfo } = require("bakong-khqr");
-const Cart = require("../models/Cart");
-const crypto = require("crypto");
+const { BakongKHQR, MerchantInfo, khqrData } = require('bakong-khqr');
+const Cart = require('../models/Cart');
+const Product = require('../models/Product');
 
-/**
- * @desc    Step 1: Generate KHQR for Cart
- * @route   POST /api/payment/charge
- */
-exports.chargeCart = async (req, res) => {
+// Helper function to calculate total (DRY - Don't Repeat Yourself)
+const calculateTotal = async (cart) => {
+    await cart.populate('items.product', 'price');
+    const total = cart.items.reduce((acc, item) => {
+        const price = item.product ? item.product.price : 0;
+        return acc + (price * item.quantity);
+    }, 0);
+    return total;
+};
+
+// @desc    Generate Bakong KHQR for the current cart
+// @route   POST /api/payment/generate-qr
+// @access  Private
+
+exports.generateBakongQR = async (req, res) => {
     try {
-        // 1. Fetch the user's cart from Atlas
-        const cart = await Cart.findOne({ user: req.user._id }).populate("items.product");
+        // ... (your existing cart lookup logic)
 
-        if (!cart || cart.items.length === 0) {
-            return res.status(400).json({ message: "Cart is empty" });
+        // Find the cart for the logged-in user (assume req.user._id is available)
+        const cart = await Cart.findOne({ user: req.user._id }).populate({
+            path: 'items.product',
+            select: 'price'
+        });
+        if (!cart) {
+            return res.status(404).json({ message: "Cart not found" });
+        }
+        const amount = await calculateTotal(cart); // Amount in dollars for USD
+
+        if (amount <= 0) {
+            return res.status(400).json({ message: "Cart total amount must be greater than 0" });
         }
 
-        // 2. Calculate Total Price (Always calculate server-side for real money!)
-        // const totalAmount = cart.items.reduce((acc, item) => {
-        //     return acc + (item.product.price * item.quantity);
-        // }, 0);
-        const totalAmount = cart.items.reduce((acc, item) => {
-            // Skip items if the product was deleted from the database
-            if (!item.product || typeof item.product.price === 'undefined') {
-                return acc; 
-            }
-            return acc + (Number(item.product.price) * item.quantity);
-        }, 0);
-
-        // Format to 2 decimal places for USD precision
-        const finalAmount = parseFloat(totalAmount.toFixed(2));
-
-        if (finalAmount <= 0) {
-            return res.status(400).json({ message: "Invalid total amount. Check if products still exist." });
-        }
-
-        // 3. Setup Bakong Individual Info
         const optionalData = {
-            currency: khqrData.currency.usd, // Using USD as requested
-            amount: totalAmount,
-            billNumber: `CS-${Date.now().toString().slice(-6)}`,
-            mobileNumber: "85587575857",
+            billNumber: `INV-${Date.now()}`,
+            mobileNumber: "85512345678", // Must be 855 format
             storeLabel: "CamStyle Shop",
-            terminalLabel: "Mobile-App",
-            expirationTimestamp: Date.now() + (5 * 60 * 1000), // 5 minutes expiry
+            terminalLabel: "Mobile App",
+            amount: amount, // Amount in dollars for USD
+            currency: khqrData.currency.usd, // Set currency to USD
+            expirationTimestamp: Date.now() + (5 * 60 * 1000), // Required for dynamic QR (5 minutes)
         };
 
-        // const individualInfo = new IndividualInfo(
-        //     process.env.BAKONG_INDIVIDUAL_ID,
-        //     khqrData.currency.usd,
-        //     process.env.BAKONG_ACCOUNT_NAME,
-        //     "Phnom Penh",
-        //     optionalData
-        // );
-        const individualInfo = new IndividualInfo(
-            process.env.BAKONG_INDIVIDUAL_ID,   // "devit@abaa"
-            process.env.BAKONG_ACCOUNT_NAME,    // "Devit Huotkeo"
-            "Phnom Penh",                       // Merchant City
-            khqrData.currency.usd,              // Currency (USD)
-            optionalData                        // Object containing amount
+        // CRITICAL: The constructor order MUST be exactly this:
+        const merchantInfo = new MerchantInfo(
+            process.env.BAKONG_ACCOUNT_ID,      // 1. Account ID
+            process.env.BAKONG_ACCOUNT_NAME,    // 2. Name
+            "Phnom Penh",                       // 3. City
+            process.env.BAKONG_MERCHANT_ID,     // 4. Merchant ID
+            "BKRTKHPP",                         // 5. BIC (Bank Identifier Code for BKRT)
+            optionalData                        // 6. Optional Object
         );
 
         const khqr = new BakongKHQR();
-        const response = khqr.generateIndividual(individualInfo);
-        const qrString = response.data.qr;
+        const response = khqr.generateMerchant(merchantInfo);
 
-        // 4. Generate MD5 for transaction tracking
-        const md5 = crypto.createHash('md5').update(qrString).digest("hex");
+        if (!response || !response.data) {
+            return res.status(500).json({ 
+                message: "Failed to generate QR code", 
+                details: response ? response : "No response from QR generator" 
+            });
+        }
 
-        // Send 'Payment Pending' response to frontend
+        // Validation Check before sending to Flutter
+        const validation = BakongKHQR.verify(response.data.qr);
+        
+        if (!validation.isValid) {
+            return res.status(500).json({ 
+                message: "Generated QR is invalid internally",
+                details: validation.reason 
+            });
+        }
+
         res.status(200).json({
-            success: true,
-            message: "payment pending",
-            qrCode: qrString,
-            md5: md5,
-            amount: totalAmount
+            qrString: response.data.qr,
+            md5: response.data.md5,
+            totalAmount: amount, // Amount in dollars
+            billNumber: optionalData.billNumber
         });
 
     } catch (error) {
-        res.status(500).json({ message: "Generation failed", error: error.message });
+        res.status(500).json({ message: error.message });
     }
 };
 
-/**
- * @desc    Step 2: Verify Payment & Clear Cart
- * @route   POST /api/payment/verify
- */
+// @desc    Verify Payment Status (Polling from Flutter)
+// @route   POST /api/payment/verify
 exports.verifyPayment = async (req, res) => {
+    const { md5 } = req.body;
+
     try {
-        const { md5 } = req.body;
-
-        if (!md5) return res.status(400).json({ message: "MD5 hash is required" });
-
-        // 1. Check transaction with Bakong Production API
-        // This requires the BAKONG_API_TOKEN in your env
-        const check = await BakongKHQR.checkBakongAccount(
-            process.env.BAKONG_API_URL,
-            md5
-        );
-
-        // 2. Handle Status Logic
-        // responseCode 0 = Success in Bakong Open API
-        if (check && check.responseCode === 0) {
-            
-            // SUCCESS: Delete the cart for this user
-            await Cart.findOneAndDelete({ user: req.user._id });
-
-            return res.status(200).json({
-                status: "payment success",
-                message: "Verified and cart cleared."
-            });
-
-        } else if (check && check.responseCode === 1) {
-            // Transaction still waiting
-            return res.status(200).json({
-                status: "payment pending",
-                message: "User has not paid yet."
-            });
-        } else {
-            // QR Expired or transaction failed
-            return res.status(400).json({
-                status: "payment fail",
-                message: "QR code expired or payment failed."
-            });
-        }
+        const khqr = new BakongKHQR();
+        // Use your Bakong API Token from the Bakong Developer Portal
+        // For production, this token is required to use the 'checkTransaction' method
+        const apiToken = process.env.BAKONG_TOKEN; 
+        
+        // This is a conceptual check. Usually, you poll the Bakong Open API 
+        // to see if the MD5 hash has been 'cleared' (paid).
+        // If success: clear user's cart in your DB.
+        
+        res.status(200).json({ 
+            message: "Status check initiated", 
+            hint: "In a real setup, call Bakong API with MD5 here." 
+        });
     } catch (error) {
-        res.status(500).json({ message: "Verification error", error: error.message });
+        res.status(500).json({ error: error.message });
     }
 };
