@@ -79,10 +79,14 @@ const updateProduct = async (req, res, next) => {
             // Update only the text fields
             product.name = req.body.name || product.name;
             product.description = req.body.description || product.description;
+            // Handle price (allowing 0 or decimals)
+            if (req.body.price !== undefined) {
+                product.price = Number(req.body.price); // ADD THIS
+            }
             
             // Handle quantity (allowing 0)
             if (req.body.quantity !== undefined) {
-                product.quantity = req.body.quantity;
+                product.quantity = Number(req.body.quantity);
             }
 
             const updatedProduct = await product.save();

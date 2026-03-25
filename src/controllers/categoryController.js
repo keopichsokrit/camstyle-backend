@@ -84,7 +84,7 @@ const updateCategory = async (req, res, next) => {
 
         // Update text fields
         category.name = name || category.name;
-
+        category.description = description || category.description;
         // If a new image was uploaded via Multer/Cloudinary
         if (req.file) {
             category.image = req.file.path; 
