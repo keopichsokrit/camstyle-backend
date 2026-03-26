@@ -12,7 +12,11 @@ const userSchema = new mongoose.Schema({
         default: 'user' 
     },
     avatar: { type: String, default: "" },
-    cloudinary_id: { type: String, default: "" }
+    cloudinary_id: { type: String, default: "" },
+    // --- ADD THESE TWO FIELDS ---
+    resetPasswordOTP: { type: String },
+    resetPasswordExpires: { type: Date }
+    // ----------------------------
     
 }, { timestamps: true });
 

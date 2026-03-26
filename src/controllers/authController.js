@@ -1,6 +1,7 @@
 // src/controllers/authController.js
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
+const sendEmail = require('../utils/sendEmail'); // Import the utility
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -86,7 +87,63 @@ const getUserProfile = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
+    // --- NEW OTP & PASSWORD RESET FUNCTIONS ---
+};
+// @desc    Step 1: Forgot Password - Send OTP
+const forgotPassword = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            res.status(404);
+            throw new Error('No account found with that email');
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        user.resetPasswordOTP = otp;
+        user.resetPasswordExpires = Date.now() + 10 * 60 * 1000; 
+        await user.save();
+
+        await sendEmail({
+            email: user.email,
+            subject: 'CamStyle Password Reset Code',
+            message: `Hello ${user.name},\n\nYour password reset code is: ${otp}.\n\nThis code expires in 10 minutes.`
+        });
+
+        res.json({ message: 'OTP sent to your email successfully' });
+    } catch (error) {
+        next(error);
+    }
 };
 
-// Update your exports at the bottom
-module.exports = { registerUser, loginUser, getUserProfile };
+// @desc    Step 2: Reset Password using OTP
+const resetPassword = async (req, res, next) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+
+        const user = await User.findOne({
+            email,
+            resetPasswordOTP: otp,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            res.status(400);
+            throw new Error('Invalid or expired OTP');
+        }
+
+        user.password = newPassword;
+        user.resetPasswordOTP = undefined;
+        user.resetPasswordExpires = undefined;
+        
+        await user.save();
+
+        res.json({ message: 'Password reset successful. You can now login.' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { registerUser, loginUser, getUserProfile, forgotPassword, resetPassword };
