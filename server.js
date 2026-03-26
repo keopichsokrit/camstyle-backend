@@ -44,8 +44,13 @@ app.use('/api/payment', paymentRoutes); // New payment routes
 // Global Error Handler
 app.use(errorHandler);
 
+// // Start Server
+// const PORT = process.env.PORT || 5000;
+// app.listen(PORT, () => {
+//     console.log(`Server is running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+// });
 // Start Server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+const PORT = process.env.PORT || 10000; // Render prefers 10000 or dynamic
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT}`);
 });
