@@ -50,7 +50,10 @@ camstyle-backend/
 │   │   ├── cartRoutes.js
 │   │   ├── profileRoutes.js
 │   │   └── paymentRoutes.js
+│   ├── services/
+│   │   └── telegram.service.js 
 │   └── utils/              # Small helper tools
+│       ├── sendEmail.js    # handling sending Email to real email
 │       └── generateToken.js # Logic to create JWT
 ├── .env                    # Hidden API Keys (DB_URI, CLOUDINARY_KEY, etc.)
 ├── .gitignore              # Tells Git to ignore node_modules and .env

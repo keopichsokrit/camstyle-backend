@@ -6,6 +6,13 @@ const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    // --- ADD THESE NEW FIELDS ---
+    birthdate: { type: Date }, 
+    home: { type: String, default: "" },      // Address/Street
+    city: { type: String, default: "" },
+    homeTown: { type: String, default: "" },
+    phoneNumber: { type: String, default: "" },
+    // ----------------------------
     role: { 
         type: String, 
         enum: ['user', 'admin'], 

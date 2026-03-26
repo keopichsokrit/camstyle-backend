@@ -15,6 +15,26 @@ exports.updateProfile = async (req, res, next) => {
             user.name = req.body.name;
         }
         
+        // 2. Update New Fields using the same pattern
+        if (req.body.birthdate !== undefined) {
+            user.birthdate = req.body.birthdate;
+        }
+        
+        if (req.body.home !== undefined) {
+            user.home = req.body.home;
+        }
+        
+        if (req.body.city !== undefined) {
+            user.city = req.body.city;
+        }
+        
+        if (req.body.homeTown !== undefined) {
+            user.homeTown = req.body.homeTown;
+        }
+        
+        if (req.body.phoneNumber !== undefined) {
+            user.phoneNumber = req.body.phoneNumber;
+        }
             // 2. Handle Password Change
         // 2. Handle Password Change
         if (newPassword && newPassword.trim() !== "") {
