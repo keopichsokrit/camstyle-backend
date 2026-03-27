@@ -50,6 +50,9 @@ app.use(errorHandler);
 //     console.log(`Server is running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 // });
 // Start Server
+app.get('/', (req, res) => {
+    res.send('<h1>Welcome to CamStyle Backend</h1><p>The server is live and healthy!</p>');
+});
 const PORT = process.env.PORT || 10000; // Render prefers 10000 or dynamic
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
