@@ -1,5 +1,5 @@
 const Product = require('../models/Product');
-
+const Wishlist = require('../models/Wishlist'); // Import the new model
 // @desc    Get all products (For Flutter Home Screen)
 // @route   GET /api/products
 const getProducts = async (req, res, next) => {
@@ -134,5 +134,44 @@ const deleteProduct = async (req, res, next) => {
         } else { res.status(404); throw new Error('Product not found'); }
     } catch (error) { next(error); }
 };
+// @desc    Toggle Wishlist (Add/Remove)
+// @route   POST /api/products/wishlist/:id
+const toggleWishlist = async (req, res, next) => {
+    try {
+        const productId = req.params.id;
+        const userId = req.user._id; // Assumes your authMiddleware provides req.user
 
-module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct,updateProductImages };
+        let wishlist = await Wishlist.findOne({ user: userId });
+
+        if (!wishlist) {
+            // If no wishlist exists, create one and add the product
+            wishlist = await Wishlist.create({ user: userId, products: [productId] });
+            return res.status(201).json({ message: "Added to wishlist", isWishlisted: true });
+        }
+
+        const isAdded = wishlist.products.includes(productId);
+
+        if (isAdded) {
+            // If already there, remove it (Unlike)
+            wishlist.products.pull(productId);
+            await wishlist.save();
+            res.json({ message: "Removed from wishlist", isWishlisted: false });
+        } else {
+            // If not there, add it (Like)
+            wishlist.products.push(productId);
+            await wishlist.save();
+            res.json({ message: "Added to wishlist", isWishlisted: true });
+        }
+    } catch (error) { next(error); }
+};
+
+// @desc    Get User Wishlist
+// @route   GET /api/products/wishlist
+const getMyWishlist = async (req, res, next) => {
+    try {
+        const wishlist = await Wishlist.findOne({ user: req.user._id }).populate('products');
+        res.json(wishlist ? wishlist.products : []);
+    } catch (error) { next(error); }
+};
+module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct,updateProductImages,toggleWishlist,
+    getMyWishlist };
