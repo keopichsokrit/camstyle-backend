@@ -40,6 +40,11 @@ app.use('/api/cart', require('./src/routes/cartRoutes'));
 app.use('/api/profile', require('./src/routes/profileRoutes'));
 
 app.use('/api/payment', paymentRoutes); // New payment routes
+// --- UPDATED COUPON ROUTE ---
+// To this (Matches your folder style):
+app.use('/api/coupons', require('./src/routes/couponRoutes'));
+
+
 
 // Global Error Handler
 app.use(errorHandler);
