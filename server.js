@@ -43,6 +43,8 @@ app.use('/api/payment', paymentRoutes); // New payment routes
 // --- UPDATED COUPON ROUTE ---
 // To this (Matches your folder style):
 app.use('/api/coupons', require('./src/routes/couponRoutes'));
+// --- NEW NOTIFICATION ROUTE ---
+app.use('/api/notifications', require('./src/routes/notificationRoutes'));
 
 
 

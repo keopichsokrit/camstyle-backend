@@ -1,6 +1,7 @@
 const { BakongKHQR, MerchantInfo, khqrData } = require('bakong-khqr');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+const Notification = require('../models/Notification'); // CRITICAL: Must match filename
 const { sendPaymentSuccessAlert } = require('../services/telegram.service');
 
 // Helper function to calculate total (DRY - Don't Repeat Yourself)
@@ -128,7 +129,19 @@ exports.verifyPayment = async (req, res) => {
                 { items: [], totalAmount: 0 },
                 { new: true }
             );
-
+            // 2. Create Notification Entry
+            try {
+                await Notification.create({
+                    user: req.user._id,
+                    title: "Payment Successful! 🎉",
+                    message: `Thank you for your $${paidAmount} payment. Your order is being processed.`,
+                    status: 'success',
+                    amount: paidAmount
+                });
+            } catch (notificationError) {
+                console.error('Notification failed to save:', notificationError.message);
+            }
+            // 3. Send Telegram Alert
             try {
                 telegramResult = await sendPaymentSuccessAlert({
                     userName: req.user?.name,
