@@ -9,6 +9,7 @@ const paymentRoutes = require('./src/routes/paymentRoutes');
 const orderRoutes = require('./src/routes/orderRoutes');
 const favoriteRoutes = require('./src/routes/favoriteRoutes');
 const totalReportRoute = require('./src/routes/totalReportRoute');
+const popularRoute = require('./src/routes/popularRoute');
 
 // Initialize database connection
 connectDB();
@@ -56,6 +57,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/favorites', favoriteRoutes);
 // NEW: Total Spending Report Route
 app.use('/api/reports', totalReportRoute);
+// NEW: Popular Products Route
+app.use('/api/popular', popularRoute);
 
 
 // Global Error Handler
