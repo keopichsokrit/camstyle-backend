@@ -2,6 +2,7 @@
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 const sendEmail = require('../utils/sendEmail'); // Import the utility
+const LoginLog = require('../models/Log'); // Ensure path and filename match your Log.js
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -47,6 +48,10 @@ const loginUser = async (req, res, next) => {
         const user = await User.findOne({ email });
 
         if (user && (await user.matchPassword(password))) {
+
+            // Record the login in the background (non-blocking)
+            await recordLogin(user._id, req);
+
             // Return ONLY the token as requested
             res.json({
                 name: user.name,
@@ -151,4 +156,33 @@ const resetPassword = async (req, res, next) => {
     }
 };
 
-module.exports = { registerUser, loginUser, getUserProfile, forgotPassword, resetPassword };
+// --- 1. SEPARATE HELPER FUNCTION ---
+// This handles the background task of saving the log
+const recordLogin = async (userId, req) => {
+    try {
+        await LoginLog.create({
+            user: userId,
+            ipAddress: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+            device: req.headers['user-agent']
+        });
+    } catch (error) {
+        console.error("Login Log Error:", error.message);
+    }
+};
+
+// --- 2. NEW VIEW FUNCTION ---
+// @desc    Get all login history for the current user
+// @route   GET /api/auth/logs
+// @access  Private
+const getMyLoginLogs = async (req, res, next) => {
+    try {
+        const logs = await LoginLog.find({ user: req.user._id })
+            .sort({ createdAt: -1 }) // Newest first
+            .limit(20); // Last 20 logins
+        res.json(logs);
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { registerUser, loginUser, getUserProfile, forgotPassword, resetPassword, getMyLoginLogs };
