@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const Wishlist = require('../models/Wishlist'); // Import the new model
+const Review = require('../models/Review'); // Add this import at the top
 // @desc    Get all products (For Flutter Home Screen)
 // @route   GET /api/products
 const getProducts = async (req, res, next) => {
@@ -173,5 +174,42 @@ const getMyWishlist = async (req, res, next) => {
         res.json(wishlist ? wishlist.products : []);
     } catch (error) { next(error); }
 };
+// @desc    Create a product review
+// @route   POST /api/products/:id/reviews
+const createProductReview = async (req, res, next) => {
+    try {
+        const { rating, comment } = req.body;
+        const product = await Product.findById(req.params.id);
+
+        if (product) {
+            // Create the review using the user ID and Name from the Auth middleware
+            const review = await Review.create({
+                user: req.user._id,
+                name: req.user.name, 
+                product: req.params.id,
+                rating: Number(rating) || 5,
+                comment
+            });
+
+            res.status(201).json({ message: 'Review added', review });
+        } else {
+            res.status(404);
+            throw new Error('Product not found');
+        }
+    } catch (error) { next(error); }
+};
+
+// @desc    Get ALL reviews from all products (Admin View)
+// @route   GET /api/reviews
+const getAllReviews = async (req, res, next) => {
+    try {
+        // Empty {} means no filter = get everything
+        const reviews = await Review.find({})
+            .populate('product', 'name') // Shows which product was reviewed
+            .sort({ createdAt: -1 });
+        res.json(reviews);
+    } catch (error) { next(error); }
+};
+
 module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct,updateProductImages,toggleWishlist,
-    getMyWishlist };
+    getMyWishlist, createProductReview, getAllReviews };

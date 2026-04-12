@@ -8,7 +8,10 @@ const {
     deleteProduct,
     updateProductImages,
     getMyWishlist,   // <--- ADD THIS
-    toggleWishlist
+    toggleWishlist, 
+    createProductReview, 
+    getAllReviews
+    
 } = require('../controllers/productController');
 const { protect, admin } = require('../middleware/authMiddleware');
 const { upload } = require('../config/cloudinary');
@@ -28,6 +31,12 @@ router.post('/', protect, admin, upload.array('images', 5), createProduct);
 router.put('/:id', protect, admin, updateProduct);
 router.put('/:id/images', protect, admin, upload.array('images', 5), updateProductImages);
 router.delete('/:id', protect, admin, deleteProduct);
+// --- NEW REVIEW ROUTES ---
+// GET /api/products/:id/reviews -> Get reviews for this product
+// POST /api/products/:id/reviews -> Post a review (Must be logged in)
+router.route('/:id/reviews')
+    .get(getAllReviews)
+    .post(protect, createProductReview);
 
 
 module.exports = router;
