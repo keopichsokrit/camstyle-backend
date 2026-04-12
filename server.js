@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const connectDB = require('./src/config/db');
 const { errorHandler } = require('./src/middleware/errorMiddleware');
 const paymentRoutes = require('./src/routes/paymentRoutes');
+const orderRoutes = require('./src/routes/orderRoutes');
 
 // Initialize database connection
 connectDB();
@@ -47,6 +48,8 @@ app.use('/api/coupons', require('./src/routes/couponRoutes'));
 app.use('/api/notifications', require('./src/routes/notificationRoutes'));
 // --- NEW NEWS ROUTE ---
 app.use('/api/news', require('./src/routes/newsRoute'));
+// NEW: Order History Route
+app.use('/api/orders', orderRoutes);
 
 
 

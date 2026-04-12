@@ -2,6 +2,7 @@ const { BakongKHQR, MerchantInfo, khqrData } = require('bakong-khqr');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const Notification = require('../models/Notification'); // CRITICAL: Must match filename
+const Order = require('../models/Order');
 const { sendPaymentSuccessAlert } = require('../services/telegram.service');
 
 // Helper function to calculate total (DRY - Don't Repeat Yourself)
@@ -122,14 +123,20 @@ exports.verifyPayment = async (req, res) => {
             const cartBeforeClear = await Cart.findOne({ user: req.user._id });
             const paidAmount = cartBeforeClear ? await calculateTotal(cartBeforeClear) : 0;
             let telegramResult = null;
-
-            /* Clear the user's cart */
-            await Cart.findOneAndUpdate(
-                { user: req.user._id },
-                { items: [], totalAmount: 0 },
-                { new: true }
-            );
-            // 2. Create Notification Entry
+            // 1. Create Order Entry
+            await Order.create({
+            user: req.user._id,
+            items: cartBeforeClear.items.map(item => ({
+                product: item.product._id,
+                name: item.product.name,
+                price: item.product.price,
+                quantity: item.quantity
+            })),
+            totalAmount: paidAmount,
+            paymentMd5: md5
+            });
+            
+            // 3. Create Notification Entry
             try {
                 await Notification.create({
                     user: req.user._id,
@@ -141,6 +148,14 @@ exports.verifyPayment = async (req, res) => {
             } catch (notificationError) {
                 console.error('Notification failed to save:', notificationError.message);
             }
+
+            /* Clear the user's cart */
+            await Cart.findOneAndUpdate(
+                { user: req.user._id },
+                { items: [], totalAmount: 0 },
+                { new: true }
+            );
+            
             // 3. Send Telegram Alert
             try {
                 telegramResult = await sendPaymentSuccessAlert({
