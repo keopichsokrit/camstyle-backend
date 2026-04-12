@@ -45,6 +45,8 @@ app.use('/api/payment', paymentRoutes); // New payment routes
 app.use('/api/coupons', require('./src/routes/couponRoutes'));
 // --- NEW NOTIFICATION ROUTE ---
 app.use('/api/notifications', require('./src/routes/notificationRoutes'));
+// --- NEW NEWS ROUTE ---
+app.use('/api/news', require('./src/routes/newsRoute'));
 
 
 
