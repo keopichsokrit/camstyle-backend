@@ -7,6 +7,7 @@ const connectDB = require('./src/config/db');
 const { errorHandler } = require('./src/middleware/errorMiddleware');
 const paymentRoutes = require('./src/routes/paymentRoutes');
 const orderRoutes = require('./src/routes/orderRoutes');
+const favoriteRoutes = require('./src/routes/favoriteRoutes');
 
 // Initialize database connection
 connectDB();
@@ -50,6 +51,8 @@ app.use('/api/notifications', require('./src/routes/notificationRoutes'));
 app.use('/api/news', require('./src/routes/newsRoute'));
 // NEW: Order History Route
 app.use('/api/orders', orderRoutes);
+// NEW: Favorites Route
+app.use('/api/favorites', favoriteRoutes);
 
 
 
