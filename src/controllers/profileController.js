@@ -81,3 +81,22 @@ exports.updateProfile = async (req, res, next) => {
         next(error); // Using your error handler style
     }
 };
+
+// @desc    Get Current User Profile
+// @route   GET /api/profile
+// @access  Private
+exports.getProfile = async (req, res, next) => {
+    try {
+        // req.user is already populated by the 'protect' middleware
+        const user = await User.findById(req.user._id).select('-password');
+
+        if (user) {
+            res.json(user);
+        } else {
+            res.status(404);
+            throw new Error('User not found');
+        }
+    } catch (error) {
+        next(error);
+    }
+};
