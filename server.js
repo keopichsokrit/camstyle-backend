@@ -13,6 +13,7 @@ const popularRoute = require('./src/routes/popularRoute');
 const appBannerRoute = require('./src/routes/appBannerRoute');
 const brandRoute = require('./src/routes/brandRoute');
 const productSizeRoute = require('./src/routes/productSizeRoute');
+const customerSupportRoute = require('./src/routes/customerSupportRoute');
 
 // Initialize database connection
 connectDB();
@@ -68,6 +69,8 @@ app.use('/api/banners', appBannerRoute);
 app.use('/api/brands', brandRoute);
 // NEW: Product Size Route
 app.use('/api/sizes', productSizeRoute);
+// NEW: Customer Support Route
+app.use('/api/support', customerSupportRoute);
 
 
 // Global Error Handler
